@@ -9,7 +9,7 @@ let ws: WebSocket | null = null;
 // 2. Authentication and Initialization Orchestrator (Pure Vanilla JS)
 export const handleAuthAndConnect = async (passwordInput: string, onError: (msg: string) => void) => {
   try {
-    const res = await fetch("http://localhost:8000/api/auth", {
+    const res = await fetch("https://rqms-backend.onrender.com/api/auth", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ password: passwordInput })
@@ -40,7 +40,7 @@ export const initializeWebSocket = (token: string) => {
   // Prevent duplicate open sockets
   if (ws && ws.readyState === WebSocket.OPEN) return;
 
-  ws = new WebSocket('ws://localhost:8000/ws?token=' + token);
+  ws = new WebSocket('wss://rqms-backend.onrender.com/ws?token=' + token);
   
   // Grab the direct store mutation handle
   const store = patientStore.getState();

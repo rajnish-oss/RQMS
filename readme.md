@@ -152,7 +152,7 @@ Activate it in Windows PowerShell:
 Install the backend dependencies:
 
 ```bash
-pip install fastapi "uvicorn[standard]" redis python-dotenv PyJWT
+pip install -r requirements.txt
 ```
 
 Create `backend/.env` with the following values:

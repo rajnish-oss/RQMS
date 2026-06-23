@@ -38,8 +38,9 @@ async def authenticate_receptionist(payload: dict):
 async def redis_listener_task(websocket: WebSocket):
     """Listens continuously to Redis Pub/Sub and pushes messages to this WebSocket."""
     # Establish an async connection to Redis
+    redis_url = os.getenv("REDIS_URL") or  "redis://localhost:6379"
     async_redis = aioredis.from_url(
-        "redis://localhost:6379", 
+        redis_url, 
         decode_responses=True,
         health_check_interval=20,     # Pings the Redis server every 20 seconds to prevent idleness
         socket_keepalive=True,        # Instructs the OS kernel to send TCP keepalive probes
