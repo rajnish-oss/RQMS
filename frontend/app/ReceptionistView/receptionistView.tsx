@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { UserPlus, Play, CheckCircle2, Clock, Users, UserCheck } from 'lucide-react';
 import { useStore } from 'zustand';
+import Loading from '../components/loading';
 
 // Import your centralized vanilla store & handler infrastructure
 import { 
@@ -32,6 +33,7 @@ export default function ReceptionistView() {
 
   // Local-only structural form UI state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [name, setName] = useState('');
@@ -47,13 +49,18 @@ export default function ReceptionistView() {
   const handleAuthSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg('');
+    setIsAuthenticating(true);
     
-    const success = await handleAuthAndConnect(passwordInput, (msg) => {
-      setErrorMsg(msg);
-    });
+    try {
+      const success = await handleAuthAndConnect(passwordInput, (msg) => {
+        setErrorMsg(msg);
+      });
 
-    if (success) {
-      setIsAuthenticated(true);
+      if (success) {
+        setIsAuthenticated(true);
+      }
+    } finally {
+      setIsAuthenticating(false);
     }
   };
 
@@ -78,6 +85,14 @@ export default function ReceptionistView() {
     if (!currentPatient) return;
     emitEndConstultation(currentPatient.id);
   };
+
+  if (isAuthenticating) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
+        <Loading />
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
     return (
