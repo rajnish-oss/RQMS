@@ -4,6 +4,8 @@ RQMS is a real-time patient queue management application for clinics and consult
 
 The application uses Redis as both its queue data store and Pub/Sub message broker. Queue changes are broadcast through a FastAPI WebSocket server, allowing every connected screen to update immediately without polling or refreshing the page.
 
+### Passphrase : CareSync_Staff_2026
+
 ## Key Features
 
 - **Live queue synchronization** across receptionist and waiting-room screens
