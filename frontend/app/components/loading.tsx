@@ -17,25 +17,25 @@ const Loading = () => {
           </linearGradient>
         </defs>
         <circle
-          fill="none"
-          stroke={`url(#${gradientId})`}
-          strokeWidth="24"
-          strokeLinecap="round"
-          strokeDasharray="0 44 0 44 0 44 0 44 0 360"
-          cx="100"
-          cy="100"
-          r="70"
-          transformOrigin="100 100"
-        >
-          <animateTransform
-            type="rotate"
-            attributeName="transform"
-            calcMode="discrete"
-            dur="2s"
-            values="360;324;288;252;216;180;144;108;72;36"
-            repeatCount="indefinite"
-          />
-        </circle>
+        fill="none"
+        stroke={`url(#${gradientId})`}
+        strokeWidth="24"
+        strokeLinecap="round"
+        strokeDasharray="0 44 0 44 0 44 0 44 0 360"
+        cx="100"
+        cy="100"
+        r="70"
+        style={{ transformOrigin: '100px 100px' }}
+      >
+        <animateTransform
+          type="rotate"
+          attributeName="transform"
+          calcMode="discrete"
+          dur="2s"
+          values="360;324;288;252;216;180;144;108;72;36"
+          repeatCount="indefinite"
+        />
+      </circle>
       </svg>
     </div>
   );
