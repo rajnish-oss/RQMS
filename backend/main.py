@@ -39,6 +39,7 @@ async def redis_listener_task(websocket: WebSocket):
     """Listens continuously to Redis Pub/Sub and pushes messages to this WebSocket."""
     # Establish an async connection to Redis
     redis_url = os.getenv("REDIS_URL") or  "redis://localhost:6379"
+    print("redis_url", redis_url)
     async_redis = aioredis.from_url(
         redis_url, 
         decode_responses=True,
@@ -56,6 +57,12 @@ async def redis_listener_task(websocket: WebSocket):
                 payload = message["data"]
                 # Send the live update straight to the screen
                 await websocket.send_text(payload)
+    except (WebSocketDisconnect, RuntimeError):
+        # The client socket is already gone or closing; the endpoint cleanup
+        # will cancel this listener.
+        pass
+    except asyncio.CancelledError:
+        raise
     except Exception as e:
         print(f"Redis listener error: {e}")
     finally:
@@ -118,6 +125,9 @@ async def websocket_endpoint(websocket: WebSocket,token: str | None = Query(None
                 # Catches bad JSON formatting
                 print(f"Invalid JSON received: {json_err}")
                 await websocket.send_json({"error": "Invalid JSON format"})
+
+            except WebSocketDisconnect:
+                raise
                 
             except Exception as e:
                 # Catches database errors, missing keys, or logic failures
