@@ -7,7 +7,8 @@ The application uses Redis as both its queue data store and Pub/Sub message brok
 ## Key Features
 
 - **Live queue synchronization** across receptionist and waiting-room screens
-- **Protected receptionist access** using a staff passphrase and a 12-hour JWT
+- **Protected receptionist access** using a staff passphrase, a 12-hour JWT, and backend token verification
+- **Remembered staff sessions** using `localStorage`, with invalid or expired tokens cleared automatically
 - **Patient registration** with an automatically generated queue token
 - **FIFO queue processing** for calling patients in arrival order
 - **Consultation tracking** with rolling average service-time metrics
@@ -43,11 +44,25 @@ flowchart LR
 
 1. Reception staff authenticate with the configured passphrase.
 2. FastAPI returns a JWT that is valid for 12 hours.
-3. The frontend opens a WebSocket connection and requests the current queue.
-4. Authorized staff actions update the Redis queue and patient records.
-5. Redis publishes an event on `channel:updates`.
-6. FastAPI forwards the event to every connected WebSocket client.
-7. Zustand updates the shared frontend state and React redraws each view.
+3. The frontend stores the token in `localStorage` so staff do not need to re-enter the passphrase on every page reload.
+4. On future visits, the frontend sends the stored token to FastAPI for verification before unlocking the receptionist dashboard.
+5. The frontend opens a WebSocket connection and requests the current queue.
+6. Authorized staff actions update the Redis queue and patient records.
+7. Redis publishes an event on `channel:updates`.
+8. FastAPI forwards the event to every connected WebSocket client.
+9. Zustand updates the shared frontend state and React redraws each view.
+
+### Authentication Flow
+
+The receptionist dashboard does not trust a token just because it exists in browser storage. A user can edit `localStorage` manually, so the frontend validates stored tokens with the backend before showing staff controls.
+
+1. A staff member submits the passphrase to `POST /api/auth`.
+2. FastAPI checks the passphrase and signs a JWT containing `role: "receptionist"` and a 12-hour expiration.
+3. The frontend saves that JWT as `ws_auth_token` in `localStorage`.
+4. When the receptionist page loads again, it calls `POST /api/auth/verify` with the stored token.
+5. FastAPI verifies the JWT signature, expiration, and receptionist role using `JWT_SECRET`.
+6. If verification succeeds, the dashboard opens and connects the WebSocket with that token.
+7. If verification fails, the frontend removes `ws_auth_token` and shows the login form again.
 
 ## Technology Stack
 
@@ -206,10 +221,10 @@ The frontend runs at `http://localhost:3000` and connects to the backend at `htt
 
 The frontend currently contains fixed development URLs in `frontend/app/utils/websocket.ts`:
 
-- HTTP API: `http://localhost:8000`
-- WebSocket API: `ws://localhost:8000/ws`
+- HTTP API: `https://rqms-backend.onrender.com`
+- WebSocket API: `wss://rqms-backend.onrender.com/ws`
 
-Update these values or move them to public environment variables before deploying to another host.
+Update these values, or move them to public environment variables, when switching between local development and deployed environments.
 
 ## Usage
 
@@ -255,6 +270,26 @@ Successful response:
 ```
 
 The JWT contains the `receptionist` role and expires after 12 hours.
+
+`POST /api/auth/verify`
+
+Request:
+
+```json
+{
+  "token": "<jwt>"
+}
+```
+
+Successful response:
+
+```json
+{
+  "success": true
+}
+```
+
+This endpoint verifies that the token was signed by the backend, has not expired, and contains the `receptionist` role. Invalid, expired, missing, or user-edited tokens return `{"success": false}`.
 
 ### WebSocket connection
 
