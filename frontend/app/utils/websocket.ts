@@ -19,7 +19,7 @@ export const handleAuthAndConnect = async (passwordInput: string, onError: (msg:
     
     if (data.success) {
       if (typeof window !== 'undefined') {
-        sessionStorage.setItem("ws_auth_token", data.token);
+        localStorage.setItem("ws_auth_token", data.token);
       }
       console.log("websocket connected successfully")
       initializeWebSocket(data.token);
@@ -31,6 +31,22 @@ export const handleAuthAndConnect = async (passwordInput: string, onError: (msg:
   } catch (err) {
     console.error("Auth HTTP failure:", err);
     onError("Network connection to auth server failed.");
+    return false;
+  }
+};
+
+export const verifyStoredAuthToken = async (token: string) => {
+  try {
+    const res = await fetch("https://rqms-backend.onrender.com/api/auth/verify", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token })
+    });
+
+    const data = await res.json();
+    return Boolean(data.success);
+  } catch (err) {
+    console.error("Stored auth token verification failed:", err);
     return false;
   }
 };

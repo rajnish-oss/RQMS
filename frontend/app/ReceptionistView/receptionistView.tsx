@@ -12,7 +12,8 @@ import {
   emitAddPatient, 
   emitCallNextPatient, 
   emitEndConstultation, 
-  initializeWebSocket
+  initializeWebSocket,
+  verifyStoredAuthToken
 } from '../utils/websocket'; // Update this path to match your layout
 
 interface Patient {
@@ -33,6 +34,10 @@ export default function ReceptionistView() {
 
   // Local-only structural form UI state
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isCheckingStoredAuth, setIsCheckingStoredAuth] = useState(() => {
+    if (typeof window === 'undefined') return false;
+    return Boolean(localStorage.getItem("ws_auth_token"));
+  });
   const [isAuthenticating, setIsAuthenticating] = useState(false);
   const [passwordInput, setPasswordInput] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
@@ -42,8 +47,28 @@ export default function ReceptionistView() {
 
   // Auto-connect if an auth session token already exists
   useEffect(() => {
-    const token = sessionStorage.getItem("ws_auth_token");
-    initializeWebSocket(token ?? '');
+    const token = localStorage.getItem("ws_auth_token");
+
+    if (!token) return;
+
+    let isMounted = true;
+
+    verifyStoredAuthToken(token).then((isValid) => {
+      if (!isMounted) return;
+
+      if (isValid) {
+        setIsAuthenticated(true);
+        initializeWebSocket(token);
+      } else {
+        localStorage.removeItem("ws_auth_token");
+      }
+
+      setIsCheckingStoredAuth(false);
+    });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handleAuthSubmit = async (e: React.FormEvent) => {
@@ -86,7 +111,7 @@ export default function ReceptionistView() {
     emitEndConstultation(currentPatient.id);
   };
 
-  if (isAuthenticating) {
+  if (isAuthenticating || isCheckingStoredAuth) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-100 p-4">
         <Loading />

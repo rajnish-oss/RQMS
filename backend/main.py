@@ -35,6 +35,20 @@ async def authenticate_receptionist(payload: dict):
     token = jwt.encode({"role": "receptionist", "exp": expiry}, os.getenv("JWT_SECRET"), algorithm=os.getenv("ALGORITHM"))
     return {"success": True, "token": token}
 
+@app.post("/api/auth/verify")
+async def verify_receptionist_token(payload: dict):
+    token = payload.get("token")
+
+    if not token:
+        return {"success": False}
+
+    try:
+        decoded = jwt.decode(token, os.getenv("JWT_SECRET"), algorithms=[os.getenv("ALGORITHM")])
+    except jwt.PyJWTError:
+        return {"success": False}
+
+    return {"success": decoded.get("role") == "receptionist"}
+
 async def redis_listener_task(websocket: WebSocket):
     """Listens continuously to Redis Pub/Sub and pushes messages to this WebSocket."""
     # Establish an async connection to Redis
