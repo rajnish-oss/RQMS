@@ -1,10 +1,33 @@
 from redis import Redis
 import json
 from datetime import datetime
+import urllib.parse as urlparse
+import os
 
 # Connect to Redis. decode_responses=True automatically converts bytes to strings,
 # so we can clean up the manual decoding logic entirely.
-r = Redis(host="localhost", port=6379, decode_responses=True)
+redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+
+# 2. Automatically fix missing protocol schemes from raw endpoints
+if redis_url and not redis_url.startswith(("redis://", "rediss://")):
+    redis_url = f"rediss://{redis_url}"
+
+# 3. Parse the connection parameters safely
+url = urlparse.urlparse(redis_url)
+
+# 4. Handle TLS requirements for cloud architectures (like Render)
+is_ssl = url.scheme == "rediss"
+
+# 5. Initialize the connection client pool securely
+r = Redis(
+    host=url.hostname,
+    port=url.port or 6379,
+    username=url.username,
+    password=url.password,
+    ssl=is_ssl,
+    ssl_cert_reqs="none" if is_ssl else None,  # Bypasses self-signed internal cert errors on Render
+    decode_responses=True
+)
 
 QUEUE_KEY = "patient_queue"
 METRICS_KEY = "queue:metrics"
